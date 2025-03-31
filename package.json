@@ -1,0 +1,9 @@
+{
+    "name": "dust-alert",
+    "version": "1.0.0",
+    "type": "module",
+    "dependencies": {
+        "axios": "^1.6.0",
+        "dotenv": "^16.4.7"
+    }
+}

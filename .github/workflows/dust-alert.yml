@@ -1,0 +1,28 @@
+name: 미세먼지 알림 봇
+
+on:
+    schedule:
+        - cron: '0 * * * *' # 매 정시마다 실행
+    workflow_dispatch:
+
+jobs:
+    notify:
+        runs-on: ubuntu-latest
+        steps:
+            - name: 저장소 체크아웃
+              uses: actions/checkout@v3
+
+            - name: Node.js 설치
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '18'
+
+            - name: 의존성 설치
+              run: npm install axios
+
+            - name: 미세먼지 확인 및 텔레그램 알림
+              run: node dust_alert.js
+              env:
+                  DUST_API_KEY: ${{ secrets.DUST_API_KEY }}
+                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
