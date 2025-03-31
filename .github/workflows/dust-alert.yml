@@ -4,7 +4,11 @@ on:
     schedule:
         - cron: '0 * * * *' # 매 정시마다 실행
     workflow_dispatch:
-
+        inputs:
+            sido:
+                description: '지역명 (예: 서울, 부산, 경기 등)'
+                required: true
+                default: '서울'
 jobs:
     notify:
         runs-on: ubuntu-latest
