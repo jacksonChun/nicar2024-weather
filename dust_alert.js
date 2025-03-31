@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from 'axios';
 
 const apiKey = process.env.DUST_API_KEY;
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
