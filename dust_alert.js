@@ -44,7 +44,7 @@ const PM25_BAD = 51;
     });
 
     // 메시지 생성
-    let message = '🌫 *미세먼지/초미세먼지 알림*\n\n';
+    let message = '';
 
     if (pm10BadAreas.length) {
       message += `*🟡 미세먼지(PM10) 나쁨 지역:*\n${pm10BadAreas.join('\n')}\n\n`;
