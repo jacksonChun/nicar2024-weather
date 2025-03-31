@@ -1,40 +1,72 @@
-// const axios = require('axios');
-import axios from 'axios';
-import 'dotenv/config'; // ES 모듈을 사용하는 경우
+const axios = require('axios');
 
-const sidoName = process.argv[2] || '서울'; // 커맨드라인 인자에서 지역명 받기
 const apiKey = process.env.DUST_API_KEY;
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 
+// 미세먼지 단계 구분
+const getGradeText = (grade) => {
+  return {
+    '1': '좋음',
+    '2': '보통',
+    '3': '나쁨',
+    '4': '매우나쁨'
+  }[grade] || '정보 없음';
+};
+
+// 기준 수치
+const PM10_BAD = 81;
+const PM25_BAD = 51;
+
 (async () => {
-    try {
-        const url = `http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${apiKey}&returnType=json&numOfRows=1&pageNo=1&sidoName=${encodeURIComponent(
-            sidoName
-        )}&ver=1.0`;
-        const { data } = await axios.get(url);
-        const item = data.response.body.items[0];
-        const pm25 = Number(item.pm25Value);
-        const grade = item.pm25Grade;
+  try {
+    const url = `http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${apiKey}&returnType=json&numOfRows=100&pageNo=1&sidoName=전국&ver=1.0`;
+    const { data } = await axios.get(url);
+    const items = data.response.body.items;
 
-        const gradeText = {
-            1: '좋음',
-            2: '보통',
-            3: '나쁨',
-            4: '매우나쁨',
-        };
+    const pm10BadAreas = [];
+    const pm25BadAreas = [];
 
-        if (pm25 >= 36) {
-            const message = `🚨 [${sidoName}] 미세먼지(PM2.5): ${pm25}㎍/㎥ (${gradeText[grade]})`;
-            await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                chat_id: chatId,
-                text: message,
-            });
-            console.log('✅ 텔레그램 메시지 전송 완료');
-        } else {
-            console.log(`ℹ️ [${sidoName}] 미세먼지 양호 (${pm25}㎍/㎥) - 메시지 생략`);
-        }
-    } catch (error) {
-        console.error('⚠️ 오류 발생:', error.message);
+    items.forEach((item) => {
+      const area = item.sidoName;
+      const pm10 = Number(item.pm10Value);
+      const pm25 = Number(item.pm25Value);
+      const pm10Grade = getGradeText(item.pm10Grade);
+      const pm25Grade = getGradeText(item.pm25Grade);
+
+      if (pm10 >= PM10_BAD) {
+        pm10BadAreas.push(`• ${area}: ${pm10}㎍/㎥ (${pm10Grade})`);
+      }
+
+      if (pm25 >= PM25_BAD) {
+        pm25BadAreas.push(`• ${area}: ${pm25}㎍/㎥ (${pm25Grade})`);
+      }
+    });
+
+    // 메시지 생성
+    let message = '🌫 *미세먼지/초미세먼지 알림*\n\n';
+
+    if (pm10BadAreas.length) {
+      message += `*🟡 미세먼지(PM10) 나쁨 지역:*\n${pm10BadAreas.join('\n')}\n\n`;
     }
+
+    if (pm25BadAreas.length) {
+      message += `*🔴 초미세먼지(PM2.5) 나쁨 지역:*\n${pm25BadAreas.join('\n')}\n\n`;
+    }
+
+    if (pm10BadAreas.length === 0 && pm25BadAreas.length === 0) {
+      message += '✅ 모든 지역의 미세먼지 수치가 양호합니다.';
+    }
+
+    // 메시지 전송
+    await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      chat_id: chatId,
+      text: message,
+      parse_mode: 'Markdown'
+    });
+
+    console.log('✅ 텔레그램 전송 완료');
+  } catch (error) {
+    console.error('❌ 오류:', error.message);
+  }
 })();
