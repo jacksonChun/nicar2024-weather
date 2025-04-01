@@ -21,13 +21,22 @@ const getGradeText = (value, type) => {
 };
 
 // 기준 수치
-const PM10_BAD = 81; // 미세먼지 나쁨 기준
-const PM25_BAD = 36; // 초미세먼지 나쁨 기준
+const PM10_BAD = 81; // 나쁨 기준
+const PM25_BAD = 36; // 나쁨 기준
 
 (async () => {
     try {
-        const url = `http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureSidoLIst?serviceKey=${apiKey}&returnType=json&numOfRows=100&pageNo=1&searchCondition=DAILY&dataGubun=DAILY`;
+        const url = `http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${apiKey}&returnType=json&numOfRows=100&pageNo=1&sidoName=전국&ver=1.0`;
         const { data } = await axios.get(url);
+        
+        // API 응답 구조 확인
+        console.log('API 응답:', JSON.stringify(data, null, 2));
+        
+        if (!data.response || !data.response.body || !data.response.body.items) {
+            console.error('❌ API 응답 구조가 올바르지 않습니다.');
+            return;
+        }
+
         const items = data.response.body.items;
 
         const pm10BadAreas = [];
@@ -53,11 +62,11 @@ const PM25_BAD = 36; // 초미세먼지 나쁨 기준
         let message = '';
 
         if (pm10BadAreas.length) {
-            message += `미세먼지(PM10):*\n${pm10BadAreas.join('\n')}\n\n`;
+            message += `*미세먼지(PM10):*\n${pm10BadAreas.join('\n')}\n\n`;
         }
 
         if (pm25BadAreas.length) {
-            message += `초미세먼지(PM2.5):*\n${pm25BadAreas.join('\n')}\n\n`;
+            message += `*초미세먼지(PM2.5):*\n${pm25BadAreas.join('\n')}\n\n`;
         }
 
         if (message) {
