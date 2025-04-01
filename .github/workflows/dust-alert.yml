@@ -21,7 +21,9 @@ jobs:
               run: npm install axios
 
             - name: 미세먼지 확인 및 텔레그램 알림
-              run: node dust_alert.js
+              run: |
+                  node dust_alert.js
+                  node dust_total.js
               env:
                   DUST_API_KEY: ${{ secrets.DUST_API_KEY }}
                   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
