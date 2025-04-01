@@ -32,18 +32,10 @@ const formatDate = (date) => {
         yesterday.setDate(yesterday.getDate() - 1);
         const searchDate = yesterday.toISOString().slice(0, 10).replace(/-/g, '');
 
-        const url = `http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureLIst?serviceKey=${apiKey}&returnType=json&numOfRows=100&pageNo=1&searchCondition=DAILY&dataGubun=DAILY&searchDate=${searchDate}`;
+        // 시도별 평균 데이터 조회 API로 변경
+        const url = `http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureSidoLIst?serviceKey=${apiKey}&returnType=json&numOfRows=100&pageNo=1&searchCondition=DAILY&dataGubun=DAILY&searchDate=${searchDate}`;
 
         const { data } = await axios.get(url);
-        
-        // API 응답 전체 구조 로깅
-        console.log('API 응답 전체 구조:', JSON.stringify(data, null, 2));
-        
-        // 첫 번째 아이템의 상세 구조 로깅
-        if (data.response.body.items && data.response.body.items.length > 0) {
-            console.log('\n첫 번째 아이템 상세 구조:', JSON.stringify(data.response.body.items[0], null, 2));
-        }
-
         const items = data.response.body.items;
 
         if (!items || items.length === 0) {
@@ -58,7 +50,7 @@ const formatDate = (date) => {
             const pm10Value = parseInt(item.pm10Value);
             const pm25Value = parseInt(item.pm25Value);
 
-            message += `*${item.cityName}*\n`;
+            message += `*${item.sidoName}*\n`;
             message += `• PM10: ${pm10Value}㎍/㎥ (${getGradeEmoji(pm10Value, 'PM10')})\n`;
             message += `• PM2.5: ${pm25Value}㎍/㎥ (${getGradeEmoji(pm25Value, 'PM25')})\n\n`;
         });
