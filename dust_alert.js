@@ -1,4 +1,5 @@
 import axios from 'axios';
+import 'dotenv/config';
 
 const apiKey = process.env.DUST_API_KEY;
 const botToken = process.env.TELEGRAM_BOT_TOKEN;

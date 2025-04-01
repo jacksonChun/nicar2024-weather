@@ -1,4 +1,5 @@
 import axios from 'axios';
+import 'dotenv/config';
 
 const apiKey = process.env.DUST_API_KEY;
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -21,37 +22,42 @@ const getGradeText = (value, type) => {
 };
 
 // 기준 수치
-const PM10_BAD = 81; // 나쁨 기준
-const PM25_BAD = 36; // 나쁨 기준
+const PM10_BAD = 81; // 미세먼지 나쁨 기준
+const PM25_BAD = 36; // 초미세먼지 나쁨 기준
+
+async function fetchDustData(itemCode) {
+    const url = `http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureLIst?serviceKey=${apiKey}&returnType=json&pageNo=1&dataGubun=HOUR&itemCode=${itemCode}`;
+    const { data } = await axios.get(url);
+    return data.response.body.items;
+}
 
 (async () => {
     try {
-        const url = `http://apis.data.go.kr/B552584/ArpltnInforInqireSvc/getCtprvnRltmMesureDnsty?serviceKey=${apiKey}&returnType=json&numOfRows=100&pageNo=1&sidoName=전국&ver=1.0`;
-        const { data } = await axios.get(url);
-        
-        // API 응답 구조 확인
-        console.log('API 응답:', JSON.stringify(data, null, 2));
-        
-        if (!data.response || !data.response.body || !data.response.body.items) {
-            console.error('❌ API 응답 구조가 올바르지 않습니다.');
-            return;
-        }
-
-        const items = data.response.body.items;
+        // PM10과 PM25 데이터 각각 요청
+        const [pm10Items, pm25Items] = await Promise.all([
+            fetchDustData('PM10'),
+            fetchDustData('PM25')
+        ]);
 
         const pm10BadAreas = [];
         const pm25BadAreas = [];
 
-        items.forEach((item) => {
+        // PM10 데이터 처리
+        pm10Items.forEach((item) => {
             const area = item.sidoName;
-            const pm10 = Number(item.pm10Value);
-            const pm25 = Number(item.pm25Value);
+            const pm10 = Number(item.informValue);
             const pm10GradeText = getGradeText(pm10, 'PM10');
-            const pm25GradeText = getGradeText(pm25, 'PM25');
 
             if (pm10 >= PM10_BAD) {
                 pm10BadAreas.push(`• ${area}: ${pm10}㎍/㎥ (${pm10GradeText})`);
             }
+        });
+
+        // PM25 데이터 처리
+        pm25Items.forEach((item) => {
+            const area = item.sidoName;
+            const pm25 = Number(item.informValue);
+            const pm25GradeText = getGradeText(pm25, 'PM25');
 
             if (pm25 >= PM25_BAD) {
                 pm25BadAreas.push(`• ${area}: ${pm25}㎍/㎥ (${pm25GradeText})`);
@@ -80,5 +86,8 @@ const PM25_BAD = 36; // 나쁨 기준
         }
     } catch (error) {
         console.error('❌ 오류:', error.message);
+        if (error.response) {
+            console.error('API 응답:', error.response.data);
+        }
     }
 })();
