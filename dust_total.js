@@ -22,8 +22,8 @@ const getGradeText = (value, type) => {
 };
 
 // 기준 수치
-const PM10_BAD = 81; // 미세먼지 나쁨 기준
-const PM25_BAD = 36; // 초미세먼지 나쁨 기준
+const PM10_BAD = 31; // 미세먼지 나쁨 기준
+const PM25_BAD = 16; // 초미세먼지 나쁨 기준
 
 async function fetchDustData(itemCode) {
     const url = `http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureLIst?serviceKey=${apiKey}&returnType=json&pageNo=1&dataGubun=HOUR&itemCode=${itemCode}`;
