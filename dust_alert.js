@@ -1,7 +1,7 @@
 import axios from 'axios';
 import 'dotenv/config';
 
-const apiKey = process.env.DUST_API_KEY;
+const apiKey = decodeURIComponent(process.env.DUST_API_KEY);
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -18,9 +18,20 @@ const getGradeText = (grade) => {
 
 (async () => {
     try {
+        // API 요청 URL 수정
         const url = `http://apis.data.go.kr/B552584/UlfptcaAlarmInqireSvc/getUlfptcaAlarmInfo?serviceKey=${apiKey}&returnType=json&numOfRows=100&pageNo=1&year=2024&ver=1.1`;
-        const { data } = await axios.get(url);
-        const items = data.response.body.items;
+
+        // API 요청 헤더 추가
+        const response = await axios.get(url, {
+            headers: {
+                Accept: 'application/json',
+            },
+        });
+
+        // API 응답 구조 확인
+        console.log('API 응답:', JSON.stringify(response.data, null, 2));
+
+        const items = response.data.response?.body?.items;
 
         if (!items || items.length === 0) {
             console.log('✅ 현재 발령된 주의보/경보가 없습니다.');
@@ -30,6 +41,9 @@ const getGradeText = (grade) => {
         const alertAreas = new Map(); // 지역별 최신 경보 상태 저장
 
         items.forEach((item) => {
+            // 각 아이템의 구조 확인
+            console.log('아이템:', JSON.stringify(item, null, 2));
+
             const area = item.sidoName;
             const issueTime = item.issueTime;
             const issueGrade = item.issueGbn;
@@ -39,7 +53,7 @@ const getGradeText = (grade) => {
         });
 
         // 메시지 생성
-        let message = '';
+        let message = '*⚠️ 미세먼지 주의보/경보 현황 ⚠️*\n\n';
         message += Array.from(alertAreas.values()).join('\n');
 
         // 메시지 전송
@@ -53,5 +67,8 @@ const getGradeText = (grade) => {
         }
     } catch (error) {
         console.error('❌ 오류:', error.message);
+        if (error.response) {
+            console.error('API 응답:', error.response.data);
+        }
     }
 })();

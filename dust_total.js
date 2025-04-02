@@ -27,31 +27,27 @@ const PM25_BAD = 36; // 초미세먼지 나쁨 기준
 
 async function fetchDustData(itemCode) {
     try {
-        // 오늘 날짜 계산 (YYYYMMDD 형식)
-        const today = new Date();
-        const searchDate = today.toISOString().slice(0, 10).replace(/-/g, '');
-
-        const url = `http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureLIst?serviceKey=${apiKey}&returnType=json&numOfRows=100&pageNo=1&itemCode=${itemCode}&searchDate=${searchDate}&sidoName=전국`;
+        const url = `http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureLIst?serviceKey=${apiKey}&returnType=json&numOfRows=1&pageNo=1&itemCode=${itemCode}&dataGubun=HOUR&searchCondition=MONTH`;
         console.log(`요청 URL: ${url}`);
-        
+
         const response = await axios.get(url);
         console.log(`${itemCode} API 응답:`, JSON.stringify(response.data, null, 2));
-        
+
         if (!response.data || !response.data.response) {
             console.error(`${itemCode} 응답에 'response' 객체가 없습니다.`);
             return [];
         }
-        
+
         if (!response.data.response.body) {
             console.error(`${itemCode} 응답에 'body' 객체가 없습니다.`);
             return [];
         }
-        
+
         if (!response.data.response.body.items) {
             console.error(`${itemCode} 응답에 'items' 배열이 없습니다.`);
             return [];
         }
-        
+
         return response.data.response.body.items;
     } catch (error) {
         console.error(`${itemCode} 데이터 가져오기 오류:`, error.message);
@@ -67,7 +63,7 @@ async function fetchDustData(itemCode) {
         }
 
         console.log('미세먼지 데이터 조회 시작...');
-        
+
         // PM10과 PM25 데이터 각각 요청
         const pm10Items = await fetchDustData('PM10');
         const pm25Items = await fetchDustData('PM25');
@@ -82,40 +78,61 @@ async function fetchDustData(itemCode) {
 
         // PM10 데이터 처리
         pm10Items.forEach((item) => {
-            const area = item.sidoName;
-            const pm10 = Number(item.informValue || 0);
-            
-            if (isNaN(pm10)) {
-                console.warn(`'${area}'의 PM10 값이 숫자가 아닙니다: ${item.informValue}`);
-                return;
-            }
-            
-            const pm10GradeText = getGradeText(pm10, 'PM10');
+            // dataTime이 있는 경우에만 처리
+            if (!item.dataTime) return;
 
-            if (pm10 >= PM10_BAD) {
-                pm10BadAreas.push(`• ${area}: ${pm10}㎍/㎥ (${pm10GradeText})`);
-            }
+            // 모든 지역 데이터 처리
+            Object.entries(item).forEach(([area, value]) => {
+                // dataTime, dataGubun, itemCode는 건너뛰기
+                if (['dataTime', 'dataGubun', 'itemCode'].includes(area)) return;
+
+                const pm10 = Number(value || 0);
+
+                if (isNaN(pm10)) {
+                    console.warn(`'${area}'의 PM10 값이 숫자가 아닙니다: ${value}`);
+                    return;
+                }
+
+                const pm10GradeText = getGradeText(pm10, 'PM10');
+
+                if (pm10 >= PM10_BAD) {
+                    pm10BadAreas.push(`• ${area}: ${pm10}㎍/㎥ (${pm10GradeText})`);
+                }
+            });
         });
 
         // PM25 데이터 처리
         pm25Items.forEach((item) => {
-            const area = item.sidoName;
-            const pm25 = Number(item.informValue || 0);
-            
-            if (isNaN(pm25)) {
-                console.warn(`'${area}'의 PM2.5 값이 숫자가 아닙니다: ${item.informValue}`);
-                return;
-            }
-            
-            const pm25GradeText = getGradeText(pm25, 'PM25');
+            // dataTime이 있는 경우에만 처리
+            if (!item.dataTime) return;
 
-            if (pm25 >= PM25_BAD) {
-                pm25BadAreas.push(`• ${area}: ${pm25}㎍/㎥ (${pm25GradeText})`);
-            }
+            // 모든 지역 데이터 처리
+            Object.entries(item).forEach(([area, value]) => {
+                // dataTime, dataGubun, itemCode는 건너뛰기
+                if (['dataTime', 'dataGubun', 'itemCode'].includes(area)) return;
+
+                const pm25 = Number(value || 0);
+
+                if (isNaN(pm25)) {
+                    console.warn(`'${area}'의 PM2.5 값이 숫자가 아닙니다: ${value}`);
+                    return;
+                }
+
+                const pm25GradeText = getGradeText(pm25, 'PM25');
+
+                if (pm25 >= PM25_BAD) {
+                    pm25BadAreas.push(`• ${area}: ${pm25}㎍/㎥ (${pm25GradeText})`);
+                }
+            });
         });
 
         // 메시지 생성
         let message = '';
+
+        if (pm10Items.length > 0) {
+            const dataTime = pm10Items[0].dataTime;
+            message += `*측정 시간: ${dataTime}*\n\n`;
+        }
 
         if (pm10BadAreas.length) {
             message += `*미세먼지(PM10):*\n${pm10BadAreas.join('\n')}\n\n`;
@@ -125,7 +142,7 @@ async function fetchDustData(itemCode) {
             message += `*초미세먼지(PM2.5):*\n${pm25BadAreas.join('\n')}\n\n`;
         }
 
-        if (message) {
+        if (pm10BadAreas.length >= 1 || pm25BadAreas.length >= 1) {
             // 메시지 전송
             console.log('메시지 전송 중...');
             await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
