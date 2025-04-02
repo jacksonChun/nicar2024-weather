@@ -1,8 +1,7 @@
-name: (초)미세먼지 알림 봇
+name: 날씨 알림 봇
 
 on:
     schedule:
-        # - cron: '0 * * * *' # 매 정시마다 실행
         - cron: '0 8,10,12,14,16,18,20,22,0 * * *' # 오전 8시부터 밤 12시까지 2시간마다 실행
     workflow_dispatch:
 
@@ -19,13 +18,11 @@ jobs:
                   node-version: '18'
 
             - name: 의존성 설치
-              run: npm install axios
+              run: npm install axios dotenv
 
-            - name: 미세먼지 확인 및 텔레그램 알림
-              run: |
-                  node dust_alert.js
-                  node dust_total.js
+            - name: 날씨 확인 및 텔레그램 알림
+              run: node weather_alert.js
               env:
-                  DUST_API_KEY: ${{ secrets.DUST_API_KEY }}
+                  WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
                   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
                   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
