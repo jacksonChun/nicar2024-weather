@@ -28,25 +28,10 @@ const PM25_BAD = 36; // 초미세먼지 나쁨 기준
 async function fetchDustData(itemCode) {
     try {
         const url = `http://apis.data.go.kr/B552584/ArpltnStatsSvc/getCtprvnMesureLIst?serviceKey=${apiKey}&returnType=json&numOfRows=1&pageNo=1&itemCode=${itemCode}&dataGubun=HOUR&searchCondition=MONTH`;
-        console.log(`요청 URL: ${url}`);
+        // console.log(`요청 URL: ${url}`);
 
         const response = await axios.get(url);
         console.log(`${itemCode} API 응답:`, JSON.stringify(response.data, null, 2));
-
-        if (!response.data || !response.data.response) {
-            console.error(`${itemCode} 응답에 'response' 객체가 없습니다.`);
-            return [];
-        }
-
-        if (!response.data.response.body) {
-            console.error(`${itemCode} 응답에 'body' 객체가 없습니다.`);
-            return [];
-        }
-
-        if (!response.data.response.body.items) {
-            console.error(`${itemCode} 응답에 'items' 배열이 없습니다.`);
-            return [];
-        }
 
         return response.data.response.body.items;
     } catch (error) {
@@ -61,17 +46,11 @@ async function fetchDustData(itemCode) {
             console.error('❌ DUST_API_KEY가 설정되지 않았습니다.');
             return;
         }
-
         console.log('미세먼지 데이터 조회 시작...');
 
         // PM10과 PM25 데이터 각각 요청
         const pm10Items = await fetchDustData('PM10');
         const pm25Items = await fetchDustData('PM25');
-
-        if (pm10Items.length === 0 && pm25Items.length === 0) {
-            console.error('❌ 미세먼지 데이터를 가져올 수 없습니다.');
-            return;
-        }
 
         const pm10BadAreas = [];
         const pm25BadAreas = [];
@@ -86,17 +65,39 @@ async function fetchDustData(itemCode) {
                 // dataTime, dataGubun, itemCode는 건너뛰기
                 if (['dataTime', 'dataGubun', 'itemCode'].includes(area)) return;
 
+                // 지역명 한글 변환
+                const areaName =
+                    {
+                        seoul: '서울',
+                        busan: '부산',
+                        daegu: '대구',
+                        incheon: '인천',
+                        gwangju: '광주',
+                        daejeon: '대전',
+                        ulsan: '울산',
+                        sejong: '세종',
+                        gyeonggi: '경기',
+                        gangwon: '강원',
+                        chungbuk: '충북',
+                        chungnam: '충남',
+                        jeonbuk: '전북',
+                        jeonnam: '전남',
+                        gyeongbuk: '경북',
+                        gyeongnam: '경남',
+                        jeju: '제주',
+                    }[area] || area;
+
                 const pm10 = Number(value || 0);
 
                 if (isNaN(pm10)) {
-                    console.warn(`'${area}'의 PM10 값이 숫자가 아닙니다: ${value}`);
+                    console.warn(`'${areaName}'의 PM10 값이 숫자가 아닙니다: ${value}`);
                     return;
                 }
 
                 const pm10GradeText = getGradeText(pm10, 'PM10');
 
                 if (pm10 >= PM10_BAD) {
-                    pm10BadAreas.push(`• ${area}: ${pm10}㎍/㎥ (${pm10GradeText})`);
+                    pm10BadAreas.push(`• ${areaName}: ${pm10} (${pm10GradeText})`);
                 }
             });
         });
@@ -111,17 +112,39 @@ async function fetchDustData(itemCode) {
                 // dataTime, dataGubun, itemCode는 건너뛰기
                 if (['dataTime', 'dataGubun', 'itemCode'].includes(area)) return;
 
+                // 지역명 한글 변환
+                const areaName =
+                    {
+                        seoul: '서울',
+                        busan: '부산',
+                        daegu: '대구',
+                        incheon: '인천',
+                        gwangju: '광주',
+                        daejeon: '대전',
+                        ulsan: '울산',
+                        sejong: '세종',
+                        gyeonggi: '경기',
+                        gangwon: '강원',
+                        chungbuk: '충북',
+                        chungnam: '충남',
+                        jeonbuk: '전북',
+                        jeonnam: '전남',
+                        gyeongbuk: '경북',
+                        gyeongnam: '경남',
+                        jeju: '제주',
+                    }[area] || area;
+
                 const pm25 = Number(value || 0);
 
                 if (isNaN(pm25)) {
-                    console.warn(`'${area}'의 PM2.5 값이 숫자가 아닙니다: ${value}`);
+                    console.warn(`'${areaName}'의 PM2.5 값이 숫자가 아닙니다: ${value}`);
                     return;
                 }
 
                 const pm25GradeText = getGradeText(pm25, 'PM25');
 
                 if (pm25 >= PM25_BAD) {
-                    pm25BadAreas.push(`• ${area}: ${pm25}㎍/㎥ (${pm25GradeText})`);
+                    pm25BadAreas.push(`• ${areaName}: ${pm25} (${pm25GradeText})`);
                 }
             });
         });
@@ -131,15 +154,15 @@ async function fetchDustData(itemCode) {
 
         if (pm10Items.length > 0) {
             const dataTime = pm10Items[0].dataTime;
-            message += `*측정 시간: ${dataTime}*\n\n`;
+            message += `측정 시간: ${dataTime}*\n\n`;
         }
 
         if (pm10BadAreas.length) {
-            message += `*미세먼지(PM10):*\n${pm10BadAreas.join('\n')}\n\n`;
+            message += `미세먼지 PM10 (단위 ㎍/㎥):*\n${pm10BadAreas.join('\n')}\n\n`;
         }
 
         if (pm25BadAreas.length) {
-            message += `*초미세먼지(PM2.5):*\n${pm25BadAreas.join('\n')}\n\n`;
+            message += `초미세먼지 PM2.5 (단위 ㎍/㎥):*\n${pm25BadAreas.join('\n')}\n\n`;
         }
 
         if (pm10BadAreas.length >= 1 || pm25BadAreas.length >= 1) {
@@ -150,6 +173,7 @@ async function fetchDustData(itemCode) {
                 text: message,
                 parse_mode: 'Markdown',
             });
+            console.log(message);
             console.log('✅ 텔레그램 전송 완료');
         } else {
             console.log('📌 나쁨 수준의 미세먼지가 없습니다.');
