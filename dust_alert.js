@@ -54,11 +54,10 @@ const getGradeText = (grade) => {
         }
 
         // 가장 최근 예보 정보 가져오기
-        const latestForecast = Array.isArray(items) ? items[0] : items;
-        const informData = latestForecast.informData;
+        const latestForecast = items[0];
+        const dataTime = latestForecast.dataTime;
         const informOverall = latestForecast.informOverall;
         const informCause = latestForecast.informCause;
-        const dataTime = latestForecast.dataTime;
 
         // 메시지 생성
         const message = `*미세먼지 예보 정보*\n\n
@@ -71,6 +70,7 @@ const getGradeText = (grade) => {
             text: message,
             parse_mode: 'Markdown',
         });
+        console.log(message);
 
         console.log('✅ 텔레그램 전송 완료');
     } catch (error) {
