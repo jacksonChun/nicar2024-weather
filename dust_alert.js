@@ -60,9 +60,7 @@ const getGradeText = (grade) => {
         const informCause = latestForecast.informCause;
 
         // 메시지 생성
-        const message = `*미세먼지 예보 정보*\n\n
-        ${dataTime}\n\n${informOverall}\n\n
-        ${informCause}`;
+        const message = `*미세먼지 예보*\n\n${dataTime}\n\n${informOverall.trim()}\n\n${informCause.trim()}`;
 
         // 텔레그램으로 메시지 전송
         await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
