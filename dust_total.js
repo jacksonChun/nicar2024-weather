@@ -149,35 +149,33 @@ async function fetchDustData(itemCode) {
             });
         });
 
+        function escapeMarkdownV2(text) {
+            return text.replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
+        }
+        
         // 메시지 생성
-let message = '';
-
-if (pm10Items.length > 0) {
-    const dataTime = pm10Items[0].dataTime;
-    message += `측정 시간: ${dataTime}\n\n`;
-}
-
-if (pm10BadAreas.length) {
-    message += `미세먼지 PM10 (단위 ㎍/㎥):\n${pm10BadAreas.join('\n')}\n\n`;
-}
-
-if (pm25BadAreas.length) {
-    message += `초미세먼지 PM2.5 (단위 ㎍/㎥):\n${pm25BadAreas.join('\n')}\n\n`;
-}
-
-if (pm10BadAreas.length >= 1 || pm25BadAreas.length >= 1) {
-    // 메시지 전송
-    console.log('메시지 전송 중...');
-    await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        chat_id: chatId,
-        text: message,
-        // parse_mode: 'Markdown',  <-- 제거
-    });
-    console.log(message);
-    console.log('✅ 텔레그램 전송 완료');
-} else {
-    console.log('📌 나쁨 수준의 미세먼지가 없습니다.');
-}
+        let message = '';
+        
+        if (pm10Items.length > 0) {
+            const dataTime = escapeMarkdownV2(pm10Items[0].dataTime);
+            message += `*측정 시간:* ${dataTime}\n\n`;
+        }
+        
+        if (pm10BadAreas.length) {
+            message += `*미세먼지 PM10 \\(단위 ㎍\\/㎥\\):*\n${pm10BadAreas.map(escapeMarkdownV2).join('\n')}\n\n`;
+        }
+        
+        if (pm25BadAreas.length) {
+            message += `*초미세먼지 PM2\\.5 \\(단위 ㎍\\/㎥\\):*\n${pm25BadAreas.map(escapeMarkdownV2).join('\n')}\n\n`;
+        }
+        
+        if (pm10BadAreas.length >= 1 || pm25BadAreas.length >= 1) {
+            await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                chat_id: chatId,
+                text: message,
+                parse_mode: 'MarkdownV2',
+            });
+        }
     } catch (error) {
         console.error('❌ 오류:', error.message);
         if (error.response) {
