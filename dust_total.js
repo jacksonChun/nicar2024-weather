@@ -158,7 +158,7 @@ async function fetchDustData(itemCode) {
         
         if (pm10Items.length > 0) {
             const dataTime = escapeMarkdownV2(pm10Items[0].dataTime);
-            message += `*측정 시간:* ${dataTime}\n\n`;
+            message += `${dataTime}\n*측정*\n\n`;
         }
         
         if (pm10BadAreas.length) {
