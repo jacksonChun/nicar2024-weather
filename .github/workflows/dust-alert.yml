@@ -3,7 +3,8 @@ name: 미세먼지 예보 텔레그램 알림
 on:
     schedule:
         # - cron: '0 * * * *' # 매 정시마다 실행
-        - cron: '0 7,12,18 * * *' # 5분 뒤
+         # - cron: '0 7,11,17,22 * * *'
+         - cron: '22 21,8 * * *' 
     workflow_dispatch:
 
 jobs:
